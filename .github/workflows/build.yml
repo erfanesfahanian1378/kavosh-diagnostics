@@ -1,0 +1,61 @@
+name: Build macOS app
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Unit tests
+        run: swift test
+
+      - name: Build app (Apple silicon + Intel)
+        run: ./Scripts/build-app.sh --universal
+
+      - name: Smoke test (hardware readout)
+        run: '"dist/Kavosh Diagnostics.app/Contents/MacOS/KavoshDiagnostics" --dump'
+
+      - name: Smoke test (quick CPU and memory test)
+        run: |
+          "dist/Kavosh Diagnostics.app/Contents/MacOS/KavoshDiagnostics" --cpu --quick
+          "dist/Kavosh Diagnostics.app/Contents/MacOS/KavoshDiagnostics" --memory --quick
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kavosh-Diagnostics-macOS
+          path: dist/Kavosh-Diagnostics-macOS.zip
+
+      - name: Publish release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="build-${{ github.run_number }}"
+          cat > notes.md <<'EOF'
+          Kavosh Diagnostics for macOS 14 or newer (Apple silicon and Intel).
+
+          **Install:** download `Kavosh-Diagnostics-macOS.zip`, unzip it and drag **Kavosh Diagnostics** into Applications.
+
+          The app isn't notarized by Apple, so the first time macOS blocks it. Either:
+          - open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**, or
+          - run this once in Terminal:
+            `xattr -dr com.apple.quarantine "/Applications/Kavosh Diagnostics.app"`
+          EOF
+          gh release create "$TAG" dist/Kavosh-Diagnostics-macOS.zip \
+            --title "Kavosh Diagnostics (build ${{ github.run_number }})" \
+            --notes-file notes.md \
+            --target "$GITHUB_SHA" \
+            --latest
