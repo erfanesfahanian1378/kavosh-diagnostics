@@ -4,3 +4,7 @@ dist/
 *.xcodeproj/
 xcuserdata/
 .DS_Store
+windows/**/bin/
+windows/**/obj/
+windows/dist/
+windows/TestResults/
