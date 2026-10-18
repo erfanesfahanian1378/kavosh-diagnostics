@@ -29,9 +29,9 @@ public sealed class SuiteView : UserControl, IDisposable
         DockPanel.SetDock(_header, Dock.Top);
         _header.Margin = new Thickness(0, 0, 0, 18);
         left.Children.Add(_header);
-        left.Children.Add(new ScrollViewer { Content = _station, Padding = new Thickness(0, 0, 8, 8) });
+        left.Children.Add(Kv.Scroll(_station, new Thickness(0, 0, 8, 8)));
 
-        var right = new ScrollViewer { Content = Kv.Column(16, _list, _telemetry), Padding = new Thickness(0, 0, 8, 8) };
+        var right = Kv.Scroll(Kv.Column(16, _list, _telemetry), new Thickness(0, 0, 8, 8));
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,300"), Margin = new Thickness(24) };
         grid.Children.Add(left);
         right.Margin = new Thickness(22, 0, 0, 0);

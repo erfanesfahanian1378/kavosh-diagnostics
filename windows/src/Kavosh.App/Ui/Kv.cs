@@ -89,7 +89,8 @@ public static class Kv
         {
             grid.ColumnDefinitions.Add(new ColumnDefinition(1, GridUnitType.Star));
             var child = children[i];
-            child.Margin = new Thickness(i == 0 ? 0 : spacing / 2, 0, i == children.Length - 1 ? 0 : spacing / 2, 0);
+            var own = child.Margin; // keeps a card's shadow room
+            child.Margin = new Thickness(i == 0 ? 0 : spacing / 2, own.Top, (i == children.Length - 1 ? 0 : spacing / 2) + own.Right, own.Bottom);
             Grid.SetColumn(child, i);
             grid.Children.Add(child);
         }
@@ -106,6 +107,13 @@ public static class Kv
         }
         return panel;
     }
+
+    /// <summary>Vertical scrolling page. The margin sits inside the scrolled content so nothing runs past the edge.</summary>
+    public static ScrollViewer Scroll(Control content, Thickness margin) => new()
+    {
+        HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
+        Content = new Border { Margin = margin, Child = content },
+    };
 
     public static Border Divider() => new() { Height = 1, Background = Palette.WithOpacity(Palette.InkColor, 0.15), Margin = new Thickness(0, 2) };
 

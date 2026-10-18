@@ -1,7 +1,10 @@
 # Kavosh Diagnostics
 
-A native macOS app that checks a Mac's hardware and benchmarks it, with a bold
-"retro" look and a full English / Persian (فارسی) interface.
+A hardware check-up and benchmark app for **macOS** and **Windows**, with a bold
+"retro" look and a full English / Persian (فارسی) interface. The macOS app is native
+Swift/SwiftUI; the Windows app (in [`windows/`](windows/)) is C#/.NET 8 with Avalonia and
+runs the exact same CPU workload, GPU scene, scoring and CSV format, so scores from both
+can be compared.
 
 ![icon](Resources/AppIcon-1024.png)
 
@@ -39,9 +42,11 @@ photosensitivity warning and keeps the Mac awake while running.
 
 ## Download
 
-Every push to `main` is built on a GitHub macOS runner and published on the
-[Releases page](../../releases/latest) as `Kavosh-Diagnostics-macOS.zip`. Unzip it and
-drag **Kavosh Diagnostics** into Applications.
+Every push to `main` is built on GitHub's macOS and Windows runners and published on the
+[Releases page](../../releases/latest).
+
+**macOS** — `Kavosh-Diagnostics-macOS.zip`: unzip it and drag **Kavosh Diagnostics** into
+Applications.
 
 The app isn't notarized by Apple, so the first time you open it macOS blocks it. Open
 **System Settings → Privacy & Security** and click **Open Anyway**, or run once:
@@ -49,6 +54,47 @@ The app isn't notarized by Apple, so the first time you open it macOS blocks it.
 ```bash
 xattr -dr com.apple.quarantine "/Applications/Kavosh Diagnostics.app"
 ```
+
+**Windows 10 / 11** — `Kavosh-Diagnostics-Windows-x64.zip` (or `-ARM64` for Snapdragon
+laptops): unzip and run **Kavosh.exe**. It's a single portable file, nothing to install.
+
+- The exe isn't code-signed, so SmartScreen may show *"Windows protected your PC"*: click
+  **More info → Run anyway**.
+- Windows asks for administrator rights at start-up; that's what lets the app read drive
+  health (SMART) and CPU sensors.
+- CPU temperature, power and fan readings also need the free, signed
+  [PawnIO](https://pawnio.eu) driver (used by LibreHardwareMonitor). Kavosh never installs
+  drivers itself; if it's missing the header shows **Limited sensors** with a link, and
+  everything else still works.
+
+## Windows version
+
+What's different from the Mac app:
+
+| | macOS | Windows |
+|---|---|---|
+| UI | SwiftUI | Avalonia (C#, .NET 8), same retro design, light/dark, English/فارسی |
+| GPU test | Metal | Direct3D 11 (same raymarch scene, HLSL port of the shader) |
+| Sensors | AppleSMC | LibreHardwareMonitor (+ PawnIO), Windows performance counters |
+| Drive health | NVMe log via IOKit | NVMe log via the Windows storage driver, ATA SMART for SATA drives, Windows reliability counters |
+| Battery | IOKit (mAh) | Windows battery driver (mWh) |
+| Refresh rate | CADisplayLink | timed against the monitor's real vertical blanks (DXGI) |
+| Keyboard test | Mac layout | PC laptop layout (physical keys, so any keyboard language works) |
+| Camera / mic | AVFoundation | DirectShow (FlashCap) / WASAPI (NAudio) |
+
+Build it on Windows with the .NET 8 SDK:
+
+```powershell
+cd windows
+dotnet test tests/Kavosh.Core.Tests        # unit tests (also run on Linux/macOS)
+./build.ps1                                # dist/win-x64/Kavosh.exe and the zips
+dotnet run --project src/Kavosh.App        # run from source
+```
+
+Command-line mode works the same way: `Kavosh.exe --dump`, `--cpu [--quick]`,
+`--memory`, `--gpu`, `--ssd D:\ --quick`. `Kavosh.exe --screenshots <folder>` renders
+every screen off-screen with sample data. Results and settings are saved in
+`%APPDATA%\Kavosh Diagnostics\`.
 
 ## Requirements
 
@@ -90,9 +136,10 @@ Handy for checking that every sensor reads correctly, without the UI:
 
 ### Continuous integration
 
-`.github/workflows/build.yml` builds the universal app on a GitHub macOS runner, runs
-the unit tests and a quick hardware smoke test, uploads the zipped app as an artifact,
-and on pushes to `main` publishes it as a GitHub Release.
+`.github/workflows/build.yml` builds the universal Mac app on a GitHub macOS runner and
+the Windows exe (x64 and ARM64) on a Windows runner, runs the unit tests and quick
+hardware smoke tests on both, uploads the zips as artifacts, and on pushes to `main`
+publishes both in one GitHub Release.
 
 ## Project layout
 
@@ -138,4 +185,6 @@ Results and settings are saved in `~/Library/Application Support/Kavosh Diagnost
 ## License notes
 
 The Vazirmatn font in `Resources/Fonts` is © The Vazirmatn Project Authors, under the
-SIL Open Font License 1.1 (see `Resources/Fonts/OFL.txt`).
+SIL Open Font License 1.1 (see `Resources/Fonts/OFL.txt`). The Windows app also uses the
+Nunito font (OFL) and several open-source libraries; see
+[`windows/THIRD-PARTY-NOTICES.txt`](windows/THIRD-PARTY-NOTICES.txt).

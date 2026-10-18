@@ -1,0 +1,18 @@
+Kavosh Diagnostics for Windows includes the following open-source components.
+
+Fonts (SIL Open Font License 1.1, full text embedded in the app's assets)
+  - Nunito — Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)
+  - Vazirmatn — Copyright 2015 The Vazirmatn Project Authors (https://github.com/rastikerdar/vazirmatn)
+
+Libraries
+  - Avalonia UI (MIT) — https://avaloniaui.net
+  - LibreHardwareMonitorLib (MPL-2.0) — https://github.com/LibreHardwareMonitor/LibreHardwareMonitor
+  - DiskInfoToolkit, HidSharp, RAMSPDToolkit (dependencies of LibreHardwareMonitorLib; their own licenses)
+  - Vortice.Windows — DXGI, Direct3D 11, D3DCompiler bindings (MIT) — https://github.com/amerkoleci/Vortice.Windows
+  - NAudio (MIT) — https://github.com/naudio/NAudio
+  - FlashCap (Apache-2.0) — https://github.com/kekyo/FlashCap
+  - .NET runtime and System.Management (MIT) — https://github.com/dotnet/runtime
+
+Drivers
+  - Kavosh does not install or bundle any driver. CPU temperature and power readings use PawnIO
+    (https://pawnio.eu) when the user has installed it themselves.

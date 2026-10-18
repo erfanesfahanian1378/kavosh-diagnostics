@@ -1,4 +1,4 @@
-name: Build macOS app
+name: Build
 
 on:
   push:
@@ -9,7 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  macos:
+    name: macOS app
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -38,23 +39,99 @@ jobs:
           name: Kavosh-Diagnostics-macOS
           path: dist/Kavosh-Diagnostics-macOS.zip
 
-      - name: Publish release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  windows:
+    name: Windows app
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: windows
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Unit tests
+        run: dotnet test tests/Kavosh.Core.Tests/Kavosh.Core.Tests.csproj -c Release
+
+      - name: Build single-file exe (x64 and ARM64)
+        run: ./build.ps1
+
+      - name: Smoke test (version and hardware readout)
+        run: |
+          ./dist/win-x64/Kavosh.exe --version | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "--version failed ($LASTEXITCODE)" }
+          ./dist/win-x64/Kavosh.exe --dump | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "--dump failed ($LASTEXITCODE)" }
+
+      - name: Smoke test (quick CPU, memory, SSD and GPU runs)
+        run: |
+          ./dist/win-x64/Kavosh.exe --cpu --quick | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "--cpu failed ($LASTEXITCODE)" }
+          ./dist/win-x64/Kavosh.exe --memory --quick | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "--memory failed ($LASTEXITCODE)" }
+          ./dist/win-x64/Kavosh.exe --ssd $env:RUNNER_TEMP --quick | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "--ssd failed ($LASTEXITCODE)" }
+          # Hosted runners have no GPU, only Microsoft's software renderer; this proves the shaders compile and frames complete.
+          ./dist/win-x64/Kavosh.exe --gpu --quick | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "--gpu failed ($LASTEXITCODE)" }
+
+      - name: Screenshots (rendered off-screen)
+        continue-on-error: true
+        run: |
+          ./dist/win-x64/Kavosh.exe --screenshots "$env:RUNNER_TEMP/screenshots" light en only=dashboard | Out-Host
+          ./dist/win-x64/Kavosh.exe --screenshots "$env:RUNNER_TEMP/screenshots" dark fa only=dashboard | Out-Host
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Kavosh-Diagnostics-Windows
+          path: |
+            windows/dist/Kavosh-Diagnostics-Windows-x64.zip
+            windows/dist/Kavosh-Diagnostics-Windows-ARM64.zip
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: Windows-screenshots
+          path: ${{ runner.temp }}/screenshots
+          if-no-files-found: ignore
+
+  release:
+    name: Publish release
+    needs: [macos, windows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           TAG="build-${{ github.run_number }}"
           cat > notes.md <<'EOF'
-          Kavosh Diagnostics for macOS 14 or newer (Apple silicon and Intel).
+          Kavosh Diagnostics for **macOS 14 or newer** (Apple silicon and Intel) and **Windows 10 / 11** (x64 and ARM64).
 
-          **Install:** download `Kavosh-Diagnostics-macOS.zip`, unzip it and drag **Kavosh Diagnostics** into Applications.
-
+          ### macOS
+          Download `Kavosh-Diagnostics-macOS.zip`, unzip it and drag **Kavosh Diagnostics** into Applications.
           The app isn't notarized by Apple, so the first time macOS blocks it. Either:
           - open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**, or
-          - run this once in Terminal:
-            `xattr -dr com.apple.quarantine "/Applications/Kavosh Diagnostics.app"`
+          - run this once in Terminal: `xattr -dr com.apple.quarantine "/Applications/Kavosh Diagnostics.app"`
+
+          ### Windows
+          Download `Kavosh-Diagnostics-Windows-x64.zip` (or the ARM64 one for Snapdragon laptops), unzip it and run **Kavosh.exe** — it's a single portable file, nothing to install.
+          - The app isn't code-signed, so SmartScreen may say *"Windows protected your PC"*: click **More info → Run anyway**.
+          - Windows asks for administrator rights when it starts — that's what lets it read drive health (SMART) and CPU sensors.
+          - CPU temperature, power and fan readings also need the free, signed **PawnIO** driver (https://pawnio.eu). Kavosh never installs drivers itself; everything else works without it.
           EOF
-          gh release create "$TAG" dist/Kavosh-Diagnostics-macOS.zip \
+          gh release create "$TAG" artifacts/*.zip \
             --title "Kavosh Diagnostics (build ${{ github.run_number }})" \
             --notes-file notes.md \
             --target "$GITHUB_SHA" \
