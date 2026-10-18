@@ -21,6 +21,7 @@ public sealed class MainWindow : Window
     private readonly Panel _overlay = new() { IsVisible = false };
     private readonly ContentControl _content = new() { HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
     private HeaderBar? _header;
+    private bool _rebuildPending;
 
     public AppModel Model => _model;
 
@@ -40,7 +41,12 @@ public sealed class MainWindow : Window
         _model.LanguageChanged += Rebuild;
         _model.Notice += message => _ = Dialog(T("Notice", "پیام"), message, new[] { (Kv.Ok, ButtonKind.Primary) });
         _model.SaveFileHandler = SaveFileAsync;
-        ActualThemeVariantChanged += (_, _) => Rebuild();
+        ActualThemeVariantChanged += (_, _) =>
+        {
+            // Rebuilding mid-run would restart the current test, so wait until the run is over.
+            if (_model.Runner is not null) _rebuildPending = true;
+            else Rebuild();
+        };
         Rebuild();
     }
 
@@ -65,6 +71,12 @@ public sealed class MainWindow : Window
 
     private void ShowScreen()
     {
+        if (_rebuildPending && _model.Runner is null)
+        {
+            _rebuildPending = false;
+            Rebuild();
+            return;
+        }
         if (_content.Content is IDisposable old) old.Dispose();
         _content.Content = _model.Screen switch
         {
