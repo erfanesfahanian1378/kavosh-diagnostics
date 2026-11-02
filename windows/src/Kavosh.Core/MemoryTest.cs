@@ -92,6 +92,8 @@ public sealed unsafe class MemoryTestEngine
         long size = (long)(physicalMemory / 8);
         if (underPressure) size /= 2;
         size = Math.Max(256 * mib, Math.Min(2048 * mib, size));
+        // A 32-bit app has only 2–4 GB of address space, so one big block must stay small.
+        if (!Environment.Is64BitProcess) size = Math.Min(size, 512 * mib);
         return size - size % (64 * mib);
     }
 

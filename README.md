@@ -57,8 +57,17 @@ The app isn't notarized by Apple, so the first time you open it macOS blocks it.
 xattr -dr com.apple.quarantine "/Applications/Kavosh Diagnostics.app"
 ```
 
-**Windows 10 / 11** — `Kavosh-Diagnostics-Windows-x64.zip` (or `-ARM64` for Snapdragon
-laptops): unzip and run **Kavosh.exe**. It's a single portable file, nothing to install.
+**Windows 10 / 11** — pick the zip that matches **Settings → System → About → System type**,
+unzip it and run **Kavosh.exe**. It's a single portable file, nothing to install.
+
+| System type | Download |
+|---|---|
+| 64-bit operating system, x64-based processor (most PCs) | `Kavosh-Diagnostics-Windows-x64.zip` |
+| 32-bit operating system | `Kavosh-Diagnostics-Windows-32bit.zip` (runs on any Windows PC, but its CPU score reads lower) |
+| ARM-based processor (Snapdragon, Windows 11) | `Kavosh-Diagnostics-Windows-ARM64.zip` |
+
+*"This app can't run on your PC"* means the zip doesn't match your PC — use the 32-bit one.
+
 
 - The exe isn't code-signed, so SmartScreen may show *"Windows protected your PC"*: click
   **More info → Run anyway**.
@@ -89,7 +98,7 @@ Build it on Windows with the .NET 8 SDK:
 ```powershell
 cd windows
 dotnet test tests/Kavosh.Core.Tests        # unit tests (also run on Linux/macOS)
-./build.ps1                                # dist/win-x64/Kavosh.exe and the zips
+./build.ps1                                # dist/<win-x64|win-x86|win-arm64>/Kavosh.exe and the zips
 dotnet run --project src/Kavosh.App        # run from source
 ```
 

@@ -1,11 +1,11 @@
 # Builds Kavosh Diagnostics for Windows as one portable Kavosh.exe per architecture and zips it.
 #
-#   ./build.ps1                 # x64 and ARM64
+#   ./build.ps1                 # x64, 32-bit (x86) and ARM64
 #   ./build.ps1 -Runtimes win-x64
 #
 # Needs the .NET 8 SDK. Output: windows/dist/<runtime>/Kavosh.exe and windows/dist/*.zip
 param(
-    [string[]] $Runtimes = @("win-x64", "win-arm64")
+    [string[]] $Runtimes = @("win-x64", "win-x86", "win-arm64")
 )
 
 $ErrorActionPreference = "Stop"
@@ -25,7 +25,7 @@ foreach ($runtime in $Runtimes) {
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed for $runtime" }
 
     Copy-Item THIRD-PARTY-NOTICES.txt $out -Force
-    $label = if ($runtime -eq "win-arm64") { "ARM64" } else { "x64" }
+    $label = switch ($runtime) { "win-arm64" { "ARM64" } "win-x86" { "32bit" } default { "x64" } }
     $zip = Join-Path $dist "Kavosh-Diagnostics-Windows-$label.zip"
     if (Test-Path $zip) { Remove-Item $zip -Force }
     Compress-Archive -Path (Join-Path $out "Kavosh.exe"), (Join-Path $out "THIRD-PARTY-NOTICES.txt") -DestinationPath $zip

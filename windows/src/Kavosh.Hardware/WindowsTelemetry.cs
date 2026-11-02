@@ -165,15 +165,16 @@ internal sealed unsafe class PdhGpuCounter : IDisposable
         fixed (byte* p = buffer)
         {
             if (Native.PdhGetFormattedCounterArrayW(_counter, Native.PDH_FMT_DOUBLE | Native.PDH_FMT_NOCAP100, ref size, out count, p) != 0) return null;
-            // PDH_FMT_COUNTERVALUE_ITEM_W: { LPWSTR name; { DWORD status; double value; } }
-            int itemSize = IntPtr.Size + 16;
+            // PDH_FMT_COUNTERVALUE_ITEM_W: { LPWSTR name; { DWORD status; double value; } }. The value part is
+            // 8-byte aligned, so the layout is the same in 32- and 64-bit processes: status at 8, value at 16, 24 bytes.
+            const int itemSize = 24;
             var perAdapter = new Dictionary<string, double>();
             for (int i = 0; i < count; i++)
             {
                 byte* item = p + i * itemSize;
                 string name = Marshal.PtrToStringUni(*(IntPtr*)item) ?? "";
-                uint cStatus = *(uint*)(item + IntPtr.Size);
-                double value = *(double*)(item + IntPtr.Size + 8);
+                uint cStatus = *(uint*)(item + 8);
+                double value = *(double*)(item + 16);
                 if (cStatus > 1 || !double.IsFinite(value)) continue;
                 // Instance names look like "pid_1234_luid_0x00000000_0x0000C2A1_phys_0_eng_0_engtype_3D".
                 int luid = name.IndexOf("luid_", StringComparison.Ordinal);

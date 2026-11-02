@@ -168,6 +168,12 @@ public sealed class CpuStation : Station
             : Kv.Label(T($"The CPU returned wrong results in {result.WrongResults} calculation(s). This points to instability (an overclock or undervolt) or a hardware fault — the score isn't valid.",
                          $"پردازنده در {result.WrongResults} محاسبه نتیجه اشتباه داد. این نشانه ناپایداری (اورکلاک یا آندرولت) یا ایراد سخت‌افزاری است — امتیاز معتبر نیست."),
                 Icon.Cross, Palette.Red));
+        if (!Environment.Is64BitProcess)
+        {
+            stack.Children.Add(Kv.Label(T("This is the 32-bit version of Kavosh. The CPU test uses 64-bit math, which runs slower in 32-bit mode, so this score reads lower than the CPU can really do. The check for wrong results is still exact.",
+                                          "این نسخه ۳۲ بیتی کاوش است. تست پردازنده از محاسبات ۶۴ بیتی استفاده می‌کند که در حالت ۳۲ بیتی کندتر اجرا می‌شود، پس این امتیاز کمتر از توان واقعی پردازنده است. بررسی نتایج اشتباه همچنان دقیق است."),
+                Icon.Info, Palette.Orange, 12));
+        }
         if (result.ThermalThrottleDetected)
         {
             stack.Children.Add(Kv.Label(T("Thermal throttle detected — this PC did not hold its speed under sustained load.",

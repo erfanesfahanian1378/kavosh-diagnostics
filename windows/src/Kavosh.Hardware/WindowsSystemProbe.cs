@@ -148,7 +148,10 @@ internal static partial class WindowsSystemProbe
                     int logical = 0;
                     for (int g = 0; g < groupCount; g++)
                     {
-                        ulong mask = *(ulong*)(entry + 8 + 24 + g * 16);
+                        // GROUP_AFFINITY { KAFFINITY Mask; WORD Group; WORD Reserved[3]; }: 16 bytes in a 64-bit
+                        // process, 12 in a 32-bit one (KAFFINITY is pointer-sized).
+                        byte* affinity = entry + 8 + 24 + g * (IntPtr.Size == 8 ? 16 : 12);
+                        ulong mask = IntPtr.Size == 8 ? *(ulong*)affinity : *(uint*)affinity;
                         logical += BitOperations.PopCount(mask);
                     }
                     cores++;
