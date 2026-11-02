@@ -22,10 +22,11 @@ public sealed class MainWindow : Window
     private readonly ContentControl _content = new() { HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
     private HeaderBar? _header;
     private bool _rebuildPending;
+    private LaunchSplash? _splash;
 
     public AppModel Model => _model;
 
-    public MainWindow(AppModel model)
+    public MainWindow(AppModel model, bool showSplash = true)
     {
         _model = model;
         Title = "Kavosh Diagnostics";
@@ -48,6 +49,28 @@ public sealed class MainWindow : Window
             else Rebuild();
         };
         Rebuild();
+        if (showSplash) ShowSplash(autoHide: true);
+    }
+
+    // ── Launch screen ──
+
+    /// <summary>Shows the launch screen (app name and developer) over the window.</summary>
+    public void ShowSplash(bool autoHide)
+    {
+        _splash = new LaunchSplash();
+        _splash.PointerPressed += (_, _) => HideSplash();
+        _root.Children.Add(_splash);
+        if (autoHide) Avalonia.Threading.DispatcherTimer.RunOnce(HideSplash, TimeSpan.FromMilliseconds(2200));
+    }
+
+    private void HideSplash()
+    {
+        var splash = _splash;
+        if (splash is null) return;
+        _splash = null;
+        splash.IsHitTestVisible = false;
+        splash.Opacity = 0;
+        Avalonia.Threading.DispatcherTimer.RunOnce(() => _root.Children.Remove(splash), TimeSpan.FromMilliseconds(500));
     }
 
     /// <summary>Rebuilds everything (language or light/dark mode changed).</summary>
@@ -66,6 +89,13 @@ public sealed class MainWindow : Window
         _root.Children.Clear();
         _root.Children.Add(dock);
         _root.Children.Add(_overlay);
+        if (_splash is not null)
+        {
+            // Redraw the launch screen in the new colors / language.
+            _splash = new LaunchSplash();
+            _splash.PointerPressed += (_, _) => HideSplash();
+            _root.Children.Add(_splash);
+        }
         ShowScreen();
     }
 
@@ -144,6 +174,12 @@ public sealed class MainWindow : Window
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
+        if (_splash is not null)
+        {
+            HideSplash();
+            e.Handled = true;
+            return;
+        }
         if (e.Key == Key.Escape && _overlay.IsVisible)
         {
             // Esc closes a dialog the same way as its last (cancel) button, which sits first in the row.
@@ -183,7 +219,7 @@ public sealed class HeaderBar : Border
             BorderThickness = new Thickness(0),
             Padding = new Thickness(0),
             Cursor = new Cursor(StandardCursorType.Hand),
-            Content = Kv.Row(12, logo, Kv.Column(1, name, Kv.SectionLabel(T("Diagnostics & Benchmark", "عیب‌یابی و بنچمارک")))),
+            Content = Kv.Row(12, logo, Kv.Column(1, name, Kv.SectionLabel(T($"Diagnostics & Benchmark · by {AppCredits.DeveloperName}", $"عیب‌یابی و بنچمارک · ساخت {AppCredits.DeveloperNamePersian}")))),
         };
         brand.Click += (_, _) => _model.GoToDashboard();
 

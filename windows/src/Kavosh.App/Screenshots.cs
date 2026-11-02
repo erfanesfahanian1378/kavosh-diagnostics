@@ -49,6 +49,7 @@ internal static class Screenshots
 
     private static IEnumerable<(string Name, Action<AppModel, MainWindow> Setup)> Pages()
     {
+        yield return ("splash", (_, window) => window.ShowSplash(autoHide: false));
         yield return ("dashboard", (_, _) => { });
         yield return ("cpu-running", (model, _) => model.StartRun(new[] { TestModule.Cpu }));
         yield return ("results", (model, _) => model.ShowReport(model.LastReport!));
@@ -68,7 +69,7 @@ internal static class Screenshots
         model.UpdateSettings(s => s.Language = language);
         Loc.Language = language;
         model.SetSampleData(SampleSpecs(), SampleDrives(), SampleReport(), SampleStorage());
-        var window = new MainWindow(model) { Width = 1440, Height = 900 };
+        var window = new MainWindow(model, showSplash: false) { Width = 1440, Height = 900 };
         window.Show();
         // Feed the live panels a little history.
         var rng = new Random(7);

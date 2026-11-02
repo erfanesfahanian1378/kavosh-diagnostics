@@ -6,22 +6,42 @@ import SwiftUI
 @MainActor
 struct RootView: View {
     @EnvironmentObject private var model: AppModel
+    @State private var showSplash = true
 
     var body: some View {
-        VStack(spacing: 0) {
-            HeaderBar()
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ZStack {
+            VStack(spacing: 0) {
+                HeaderBar()
+                content
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .background(Theme.background)
+            .foregroundStyle(Theme.ink)
+            .id(model.settings.language)
+
+            if showSplash {
+                LaunchSplash()
+                    .onTapGesture { hideSplash() }
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
         }
-        .background(Theme.background)
-        .foregroundStyle(Theme.ink)
         .environment(\.layoutDirection, model.settings.language.isRightToLeft ? .rightToLeft : .leftToRight)
-        .id(model.settings.language)
+        .task {
+            // The launch screen (app name and developer) stays for a moment, then fades out.
+            try? await Task.sleep(nanoseconds: 2_200_000_000)
+            hideSplash()
+        }
         .alert(T("Notice", "پیام"), isPresented: noticeBinding) {
             Button(T("OK", "باشه"), role: .cancel) {}
         } message: {
             Text(model.notice ?? "")
         }
+    }
+
+    private func hideSplash() {
+        guard showSplash else { return }
+        withAnimation(.easeOut(duration: 0.45)) { showSplash = false }
     }
 
     @ViewBuilder
@@ -71,7 +91,7 @@ struct HeaderBar: View {
                     VStack(alignment: .leading, spacing: 1) {
                         Text("Kavosh")
                             .font(.system(size: 21, weight: .black, design: .rounded))
-                        SectionLabel(T("Diagnostics & Benchmark", "عیب‌یابی و بنچمارک"))
+                        SectionLabel(T("Diagnostics & Benchmark · by \(AppCredits.developerName)", "عیب‌یابی و بنچمارک · ساخت \(AppCredits.developerNamePersian)"))
                     }
                 }
             }

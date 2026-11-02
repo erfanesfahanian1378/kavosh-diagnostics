@@ -32,6 +32,8 @@
 	<string>Kavosh Diagnostics shows a live preview from the camera so you can check that it works. Nothing is recorded or sent anywhere.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Kavosh Diagnostics listens to the microphone to show its level and pitch so you can check that it works. Nothing is recorded or sent anywhere.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2026 Erfan Esfahanian</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSPrincipalClass</key>

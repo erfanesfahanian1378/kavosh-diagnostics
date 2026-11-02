@@ -8,6 +8,8 @@ can be compared.
 
 ![icon](Resources/AppIcon-1024.png)
 
+**Developed by Erfan Esfahanian** (عرفان اصفهانیان).
+
 ## What it does
 
 **Dashboard**
